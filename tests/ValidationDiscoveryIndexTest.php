@@ -38,6 +38,19 @@ final class ValidationDiscoveryIndexTest extends TestCase
         self::assertSame(CommandValidator::class, $entries[0]->class);
     }
 
+    public function testKeepsInterfaceValidatorServiceIdsWithoutAutowiringThem(): void
+    {
+        $index = new ValidationDiscoveryIndex();
+        $index->handle(new ClassInfo(InterfaceDelegatedCommand::class));
+        $index->finalize();
+
+        self::assertSame([
+            'kind' => 'validator',
+            'class' => CommandValidatorContract::class,
+        ], $index->map()['validators'][InterfaceDelegatedCommand::class]);
+        self::assertSame([], iterator_to_array($index->entries(), preserve_keys: false));
+    }
+
     public function testCompilerKeepsAnEmptyVersionedMap(): void
     {
         $index = new ValidationDiscoveryIndex();
@@ -62,6 +75,11 @@ final class AttributedCommand
 
 #[ValidatedBy(CommandValidator::class)]
 final class DelegatedCommand {}
+
+interface CommandValidatorContract extends ValidatorInterface {}
+
+#[ValidatedBy(CommandValidatorContract::class)]
+final class InterfaceDelegatedCommand {}
 
 final class CommandValidator implements ValidatorInterface
 {

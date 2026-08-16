@@ -1,14 +1,13 @@
 {
     "name": "componenta/validation-app",
-    "description": "Componenta application integration for validation attribute discovery and production compilation",
+    "description": "Componenta application integration for compiled validation metadata",
     "type": "library",
     "license": "MIT",
     "keywords": [
         "componenta",
         "validation",
         "attributes",
-        "compiler",
-        "discovery"
+        "compilation"
     ],
     "require": {
         "php": "^8.4",
@@ -17,9 +16,11 @@
         "componenta/config": "^2.0.1",
         "componenta/di": "^4.0",
         "componenta/tokenizer": "^1.0",
-        "componenta/validation": "^2.0"
+        "componenta/validation": "^2.0",
+        "psr/container": "^2.0"
     },
     "require-dev": {
+        "componenta/app-console": "^3.0",
         "phpunit/phpunit": "^12.0"
     },
     "autoload": {
@@ -32,6 +33,13 @@
             "Componenta\\Validation\\App\\Tests\\": "tests/"
         }
     },
+    "extra": {
+        "componenta": {
+            "config-providers": [
+                "Componenta\\Validation\\App\\ConfigProvider"
+            ]
+        }
+    },
     "scripts": {
         "test": "@php vendor/bin/phpunit"
     },
@@ -39,12 +47,5 @@
         "sort-packages": true
     },
     "minimum-stability": "stable",
-    "prefer-stable": true,
-    "extra": {
-        "componenta": {
-            "config-providers": [
-                "Componenta\\Validation\\App\\ConfigProvider"
-            ]
-        }
-    }
+    "prefer-stable": true
 }
