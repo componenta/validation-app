@@ -20,7 +20,7 @@
         "psr/container": "^2.0"
     },
     "require-dev": {
-        "componenta/app-console": "^3.0.2",
+        "componenta/app-console": "^3.0.3",
         "phpunit/phpunit": "^12.0"
     },
     "autoload": {
