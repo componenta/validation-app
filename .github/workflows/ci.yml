@@ -16,37 +16,16 @@ jobs:
         php: ['8.4', '8.5']
     steps:
       - uses: actions/checkout@v7
-
-      - uses: actions/checkout@v7
-        with:
-          repository: componenta/validation
-          ref: v2
-          path: validation-source
-
-      - uses: actions/checkout@v7
-        with:
-          repository: componenta/di
-          ref: main
-          path: di-source
-
-      - uses: actions/checkout@v7
-        with:
-          repository: componenta/app-console
-          ref: main
-          path: app-console-source
-
       - uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
           coverage: none
           tools: composer:v2
-
-      - run: composer config --working-dir=validation-source version 2.0.0
-      - run: composer config --working-dir=di-source version 4.0.2
-      - run: composer config --working-dir=app-console-source version 3.0.2
-      - run: composer config repositories.validation path validation-source
-      - run: composer config repositories.di path di-source
-      - run: composer config repositories.app-console path app-console-source
       - run: composer validate --strict
-      - run: composer update --no-interaction --prefer-dist
+      - run: composer install --no-interaction --prefer-dist
+      - name: Verify released dependency floors
+        shell: bash
+        run: |
+          set -euo pipefail
+          composer show componenta/app componenta/app-console componenta/config componenta/di componenta/validation
       - run: composer test
