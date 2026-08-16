@@ -25,7 +25,13 @@ jobs:
           tools: composer:v2
       - run: composer validate --strict
       - run: composer install --no-interaction --prefer-dist
-      - run: composer show componenta/app componenta/app-console componenta/config componenta/di componenta/validation
+      - name: Verify released dependency floors
+        shell: bash
+        run: |
+          set -euo pipefail
+          for package in componenta/app componenta/app-console componenta/config componenta/di componenta/validation; do
+            composer show "$package"
+          done
       - run: composer test
 
   publish:
