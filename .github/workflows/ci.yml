@@ -27,5 +27,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          composer show componenta/app componenta/app-console componenta/config componenta/di componenta/validation
+          for package in componenta/app componenta/app-console componenta/config componenta/di componenta/validation; do
+            composer show "$package"
+          done
       - run: composer test
