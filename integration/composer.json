@@ -1,0 +1,88 @@
+{
+    "name": "componenta/validation-integration-tests",
+    "description": "Validation build and runtime contracts against local Componenta packages",
+    "type": "project",
+    "license": "MIT",
+    "repositories": [
+        {
+            "type": "path",
+            "url": "../../*",
+            "options": {
+                "symlink": true,
+                "versions": {
+                    "componenta/app": "4.0.0",
+                    "componenta/app-console": "4.0.0",
+                    "componenta/app-http": "2.1.0",
+                    "componenta/app-roadrunner": "2.0.0",
+                    "componenta/auth": "2.1.0",
+                    "componenta/class-finder": "2.0.0",
+                    "componenta/clock": "1.1.0",
+                    "componenta/composer-plugin": "1.0.3",
+                    "componenta/config": "3.0.0",
+                    "componenta/cqrs": "4.0.0",
+                    "componenta/cqrs-app": "4.0.0",
+                    "componenta/cqrs-lock": "3.0.0",
+                    "componenta/cqrs-policy": "3.0.0",
+                    "componenta/cqrs-retry": "3.0.0",
+                    "componenta/cqrs-transaction-cycle": "3.0.0",
+                    "componenta/cqrs-transport": "5.0.0",
+                    "componenta/cycle": "1.1.0",
+                    "componenta/cycle-app": "1.1.0",
+                    "componenta/di": "5.0.0",
+                    "componenta/error-handler": "1.0.3",
+                    "componenta/error-handler-app": "1.1.0",
+                    "componenta/filter": "2.0.0",
+                    "componenta/http-body-parsing-middleware": "1.1.0",
+                    "componenta/http-emitter": "1.0.3",
+                    "componenta/http-paginate-interceptor": "1.0.4",
+                    "componenta/http-psr": "1.1.0",
+                    "componenta/http-psr-nyholm": "1.1.0",
+                    "componenta/http-respond-interceptor": "1.0.4",
+                    "componenta/http-responder": "1.0.3",
+                    "componenta/interceptor": "3.0.0",
+                    "componenta/interceptor-app": "2.0.0",
+                    "componenta/iterator": "1.1.0",
+                    "componenta/middleware-factory": "2.1.0",
+                    "componenta/policy": "2.0.0",
+                    "componenta/policy-app": "2.0.0",
+                    "componenta/reflection": "2.0.1",
+                    "componenta/router": "2.1.0",
+                    "componenta/router-app": "4.0.0",
+                    "componenta/serialize-interceptor": "1.0.4",
+                    "componenta/templater-app": "1.1.0",
+                    "componenta/validation": "3.0.0",
+                    "componenta/validation-app": "2.0.0",
+                    "componenta/var-export": "2.0.0",
+                    "componenta/skeleton": "4.0.0",
+                    "componenta/http-psr-diactoros": "1.1.0",
+                    "componenta/http-psr-guzzle": "1.1.0",
+                    "componenta/http-psr-slim": "1.1.0",
+                    "componenta/websocket-app": "1.1.0",
+                    "componenta/websocket-server": "1.1.0"
+                }
+            }
+        }
+    ],
+    "require": {
+        "componenta/validation": "^3.0.0",
+        "componenta/validation-app": "^2.0.0",
+        "componenta/app": "^4.0.0",
+        "componenta/app-console": "^4.0.0",
+        "componenta/config": "^3.0.0",
+        "componenta/di": "^5.0.0",
+        "componenta/reflection": "^2.0.1",
+        "componenta/class-finder": "^2.0.0",
+        "componenta/iterator": "^1.1.0",
+        "componenta/error-handler": "^1.0.3"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^12.0",
+        "phpstan/phpstan": "^2.1"
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "scripts": {
+        "test": "@php vendor/bin/phpunit --configuration ../phpunit.xml.dist --colors=never",
+        "test:validation": "@php vendor/bin/phpunit --configuration ../../validation/phpunit.xml.dist --colors=never"
+    }
+}

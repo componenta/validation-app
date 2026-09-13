@@ -1,26 +1,29 @@
 {
     "name": "componenta/validation-app",
-    "description": "Componenta application integration for compiled validation metadata",
+    "description": "Application building of declarative validation maps with native attribute fallback",
     "type": "library",
     "license": "MIT",
     "keywords": [
         "componenta",
         "validation",
         "attributes",
-        "compilation"
+        "build"
     ],
     "require": {
         "php": "^8.4",
-        "componenta/app": "^3.0.2",
-        "componenta/class-finder": "^1.0",
-        "componenta/config": "^2.0.2",
-        "componenta/di": "^4.0.2",
+        "componenta/app": "^4.0.0",
+        "componenta/class-finder": "^2.0.0",
+        "componenta/config": "^3.0.0",
+        "componenta/di": "^5.0.0",
         "componenta/tokenizer": "^1.0",
-        "componenta/validation": "^2.0.0",
-        "psr/container": "^2.0"
+        "componenta/validation": "^3.0.0",
+        "componenta/var-export": "^2.0.0",
+        "psr/container": "^2.0",
+        "componenta/path-resolver": "^1.0",
+        "nikic/php-parser": "^5.8"
     },
     "require-dev": {
-        "componenta/app-console": "^3.0.3",
+        "componenta/app-console": "^4.0.0",
         "phpunit/phpunit": "^12.0"
     },
     "autoload": {
@@ -38,10 +41,14 @@
             "config-providers": [
                 "Componenta\\Validation\\App\\ConfigProvider"
             ]
+        },
+        "branch-alias": {
+            "dev-main": "2.0.x-dev"
         }
     },
     "scripts": {
-        "test": "@php vendor/bin/phpunit"
+        "test": "@php vendor/bin/phpunit",
+        "test:integration": "@composer --working-dir=integration test"
     },
     "config": {
         "sort-packages": true
