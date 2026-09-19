@@ -4,14 +4,21 @@ declare(strict_types=1);
 namespace Componenta\Validation\App\Build;
 
 use Componenta\App\Build\ApplicationBuilderInterface;
+use Componenta\App\Build\PhpMapFile;
+use Componenta\App\Build\ApplicationBuildCleanerInterface;
 use Componenta\ClassFinder\ClassIteratorInterface;
 use Componenta\VarExport\VarExport;
 use ErrorException;
 use RuntimeException;
 
-final readonly class ValidationBuilder implements ApplicationBuilderInterface
+final readonly class ValidationBuilder implements ApplicationBuilderInterface, ApplicationBuildCleanerInterface
 {
     public function __construct(private ClassIteratorInterface $classes, private string $file) {}
+
+    public function clean(): void
+    {
+        PhpMapFile::remove($this->file);
+    }
 
     public function build(): void
     {

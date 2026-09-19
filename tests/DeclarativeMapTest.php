@@ -19,6 +19,26 @@ require_once __DIR__ . '/ValidatorMapBuildTest.php';
 
 final class DeclarativeMapTest extends TestCase
 {
+    public function testGeneratedMapPreservesNativeClassIdentifierSemantics(): void
+    {
+        $root = sys_get_temp_dir() . '/validation_map_' . bin2hex(random_bytes(8));
+        mkdir($root);
+        try {
+            ValidatorMapBuildTest::container($root, 'production', new ClassIterator([new ClassInfo(RegistrationDto::class)]))
+                ->get(ApplicationBuildOrchestrator::class)->build();
+            foreach (['development', 'production'] as $environment) {
+                $provider = ValidatorMapBuildTest::container($root, $environment, new ClassIterator([]))
+                    ->get(ValidationProviderInterface::class);
+                foreach ([RegistrationDto::class, '\\' . RegistrationDto::class, strtolower(RegistrationDto::class)] as $id) {
+                    self::assertTrue($provider->provide($id)->validate(['email' => 'user@example.com', 'years' => 25]));
+                }
+                self::assertNull($provider->provide('\\\\' . RegistrationDto::class), $environment);
+            }
+        } finally {
+            ValidatorMapBuildTest::remove($root);
+        }
+    }
+
     public function testGeneratedMapPreservesLiteralRegularExpressions(): void
     {
         $root = sys_get_temp_dir() . '/validation_map_' . bin2hex(random_bytes(8));
