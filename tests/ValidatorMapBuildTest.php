@@ -94,6 +94,27 @@ final class ValidatorMapBuildTest extends TestCase
         }
     }
 
+    public function testSourceRecoveryBypassesStaleProductionRules(): void
+    {
+        $root = sys_get_temp_dir() . '/validation_map_' . bin2hex(random_bytes(8));
+        mkdir($root);
+        $file = $root . '/validators.php';
+        $contents = '<?php return ' . var_export([MapBuildDto::class => ['other' => 'required']], true) . ';';
+        file_put_contents($file, $contents);
+        try {
+            $ordinary = self::container($root, 'production', new ClassIterator([]))->get(ValidationProviderInterface::class);
+            $errors = $ordinary->provide(MapBuildDto::class)->validate(['name' => 'Ada']);
+            self::assertSame(['other'], array_keys($errors->toArray()));
+
+            $recovery = self::container($root, 'production', new ClassIterator([]), forceSource: true)
+                ->get(ValidationProviderInterface::class);
+            self::assertTrue($recovery->provide(MapBuildDto::class)->validate(['name' => 'Ada']));
+            self::assertSame($contents, file_get_contents($file));
+        } finally {
+            self::remove($root);
+        }
+    }
+
     public static function remove(string $root): void
     {
         $resolved = realpath($root);
@@ -114,10 +135,10 @@ final class ValidatorMapBuildTest extends TestCase
         rmdir($resolved);
     }
 
-    public static function container(string $root, string $environment, ClassIterator $source, array $extra = []): ContainerValue
+    public static function container(string $root, string $environment, ClassIterator $source, array $extra = [], bool $forceSource = false): ContainerValue
     {
         $composition = (new ConfigFactory())->create(
-            new Environment(['APP_ENV' => $environment]),
+            new Environment(['APP_ENV' => $environment, 'APP_DISCOVERY_SOURCE' => $forceSource]),
             new \Componenta\App\ConfigProvider(),
             new \Componenta\App\Console\ConfigProvider(),
             new \Componenta\Validation\ConfigProvider(),
