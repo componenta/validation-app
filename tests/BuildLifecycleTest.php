@@ -18,7 +18,7 @@ require_once __DIR__ . '/ValidatorMapBuildTest.php';
 final class BuildLifecycleTest extends TestCase
 {
     #[DataProvider('invalidFiles')]
-    public function testProductionFallsBackWithoutDiscoveryOrArtifactWrites(?string $content): void
+    public function testLegacyFilesAreIgnoredWithoutDiscoveryOrArtifactWrites(?string $content): void
     {
         $root = sys_get_temp_dir() . '/validation_map_' . bin2hex(random_bytes(8));
         mkdir($root);
@@ -34,7 +34,7 @@ final class BuildLifecycleTest extends TestCase
             self::assertTrue($provider->provide(MapBuildDto::class)->validate(['name' => 'Ada']));
             self::assertSame($content !== null, is_file($file));
             if ($content !== null) { self::assertSame($content, file_get_contents($file)); }
-            self::assertDirectoryDoesNotExist($file . '.d');
+            self::assertDirectoryDoesNotExist($root . '/build');
         } finally {
             ValidatorMapBuildTest::remove($root);
         }
@@ -48,6 +48,28 @@ final class BuildLifecycleTest extends TestCase
         yield 'old envelope' => ['<?php return ["version" => 1, "validators" => []];'];
         yield 'invalid factory' => ['<?php return ["ExampleDto" => 42];'];
         yield 'legacy factory entry' => ['<?php return ["Componenta\\\\Validation\\\\App\\\\Tests\\\\MapBuildDto" => static function () { throw new \\LogicException("Legacy factory executed."); }];'];
+    }
+
+    #[DataProvider('invalidPreparedMaps')]
+    public function testIncompatiblePreparedRulesFallBackWithoutChangingTheSnapshot(array $map, int $schema): void
+    {
+        $root = sys_get_temp_dir() . '/validation_map_' . bin2hex(random_bytes(8));
+        mkdir($root);
+        try {
+            $prepared = ValidatorMapBuildTest::publish($root, $map, $schema);
+            $provider = ValidatorMapBuildTest::container($root, 'production', new ClassIterator([]))
+                ->get(ValidationProviderInterface::class);
+            self::assertTrue($provider->provide(MapBuildDto::class)->validate(['name' => 'Ada']));
+            self::assertSame($prepared->generation, ValidatorMapBuildTest::store($root)->load()?->generation);
+        } finally {
+            ValidatorMapBuildTest::remove($root);
+        }
+    }
+
+    public static function invalidPreparedMaps(): iterable
+    {
+        yield 'invalid entry' => [[MapBuildDto::class => 42], 1];
+        yield 'unsupported schema' => [[MapBuildDto::class => ['other' => 'required']], 2];
     }
 
     public function testHelpAndListKeepBuildDependenciesLazy(): void
@@ -68,7 +90,7 @@ final class BuildLifecycleTest extends TestCase
                 self::assertSame(0, $application->run(new ArrayInput($arguments), $output));
                 self::assertStringContainsString('app:build', $output->fetch());
             }
-            self::assertFileDoesNotExist($root . '/validators.php');
+            self::assertNull(ValidatorMapBuildTest::store($root)->load());
         } finally {
             ValidatorMapBuildTest::remove($root);
         }
@@ -81,7 +103,7 @@ final class BuildLifecycleTest extends TestCase
         try {
             ValidatorMapBuildTest::container($root, 'production', new ClassIterator([new ClassInfo(MapBuildDto::class)]))
                 ->get(ApplicationBuildOrchestrator::class)->build();
-            $previous = file_get_contents($root . '/validators.php');
+            $previous = ValidatorMapBuildTest::store($root)->load()?->generation;
             $source = new ClassIterator((static function (): \Generator {
                 yield new ClassInfo(BuildStateDto::class);
                 throw new \RuntimeException('Discovery failed.');
@@ -94,7 +116,7 @@ final class BuildLifecycleTest extends TestCase
                 $output = new BufferedOutput();
                 self::assertSame(1, $application->run(new ArrayInput(['command' => 'app:build']), $output));
                 self::assertStringContainsString('Discovery failed.', $output->fetch());
-                self::assertSame($previous, file_get_contents($root . '/validators.php'));
+                self::assertSame($previous, ValidatorMapBuildTest::store($root)->load()?->generation);
             }
             self::assertTrue($container->get(ValidationProviderInterface::class)->provide(MapBuildDto::class)->validate(['name' => 'Ada']));
         } finally {
@@ -106,19 +128,16 @@ final class BuildLifecycleTest extends TestCase
     {
         $root = sys_get_temp_dir() . '/validation_map_' . bin2hex(random_bytes(8));
         mkdir($root);
-        $file = $root . '/validators.php';
-        $previous = '<?php return [];';
-        mkdir($file);
-        file_put_contents($file . '/previous.php', $previous);
+        $file = $root . '/build';
+        $previous = 'Do not replace a source file with the build store.';
+        file_put_contents($file, $previous);
         try {
             $container = ValidatorMapBuildTest::container($root, 'production', new ClassIterator([new ClassInfo(BuildStateDto::class)]));
             $application = new Application();
             $application->setAutoExit(false);
             $application->addCommand($container->get(BuildCommand::class));
             self::assertSame(1, $application->run(new ArrayInput(['command' => 'app:build']), new BufferedOutput()));
-            self::assertSame($previous, file_get_contents($file . '/previous.php'));
-            self::assertSame([], require $file . '/previous.php');
-            self::assertSame([], glob($root . '/.validators.php.*.tmp'));
+            self::assertSame($previous, file_get_contents($file));
         } finally {
             ValidatorMapBuildTest::remove($root);
         }
@@ -131,10 +150,10 @@ final class BuildLifecycleTest extends TestCase
         try {
             ValidatorMapBuildTest::container($root, 'production', new ClassIterator([]))
                 ->get(ApplicationBuildOrchestrator::class)->build();
-            self::assertSame([], require $root . '/validators.php');
+            self::assertSame([], ValidatorMapBuildTest::map($root));
             ValidatorMapBuildTest::container($root, 'production', new ClassIterator([new ClassInfo(MapBuildDto::class)]))
                 ->get(ApplicationBuildOrchestrator::class)->build();
-            $map = require $root . '/validators.php';
+            $map = ValidatorMapBuildTest::map($root);
             self::assertSame(['name' => 'required'], $map[MapBuildDto::class]);
             self::assertTrue(ValidatorMapBuildTest::container($root, 'production', new ClassIterator([]))
                 ->get(ValidationProviderInterface::class)->provide(MapBuildDto::class)->validate(['name' => 'Ada']));

@@ -53,7 +53,7 @@ PHP;
             fclose($pipes[1]);
             fclose($pipes[2]);
             self::assertSame(0, proc_close($process), $errors . $output);
-            self::assertSame(['value' => 'allof:arrayof:regex:~^(red|blue)$~'], (require $root . '/validators.php')[$class]);
+            self::assertSame(['value' => 'allof:arrayof:regex:~^(red|blue)$~'], (ValidatorMapBuildTest::map($root))[$class]);
             self::assertFalse(class_exists($class, false));
 
             $provider = ValidatorMapBuildTest::container($root, 'production', new ClassIterator([]))->get(ValidationProviderInterface::class);

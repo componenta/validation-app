@@ -3,6 +3,9 @@ declare(strict_types=1);
 namespace Componenta\Validation\App\Tests;
 
 use Componenta\App\Build\ApplicationBuildOrchestrator;
+use Componenta\App\Build\BuildContext;
+use Componenta\App\Build\BuildStore;
+use Componenta\App\Build\PreparedBuild;
 use Componenta\App\Console\Command\BuildCommand;
 use Componenta\ClassFinder\ClassIterator;
 use Componenta\Config\ConfigFactory;
@@ -13,6 +16,7 @@ use Componenta\Stdlib\PathResolver;
 use Componenta\Stdlib\PathResolverInterface;
 use Componenta\Tokenizer\ClassInfo;
 use Componenta\Validation\Attribute\Validate;
+use Componenta\Validation\App\Build\ValidationBuilder;
 use Componenta\Validation\Provider\ValidationProviderInterface;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Tester\CommandTester;
@@ -42,11 +46,11 @@ final class ValidatorMapBuildTest extends TestCase
             ]);
             $command = $build->get(BuildCommand::class, BuildCommand::class);
             self::assertSame(0, $reads);
-            self::assertFileDoesNotExist($root . '/validators.php');
+            self::assertNull(self::store($root)->load());
             self::assertSame(0, (new CommandTester($command))->execute([]));
             self::assertSame(1, $reads);
             self::assertSame([MapBuildDto::class], $build->get(SharedSourceBuilder::class)->classes);
-            $map = require $root . '/validators.php';
+            $map = ValidatorMapBuildTest::map($root);
             self::assertSame(['name' => 'required'], $map[MapBuildDto::class]);
             $runtimeSource = new ClassIterator((static function (): \Generator {
                 throw new \RuntimeException('Runtime discovery must remain lazy.');
@@ -63,7 +67,6 @@ final class ValidatorMapBuildTest extends TestCase
                 self::assertSame('validation.required', $errors->get('name')->messageId);
             }
         } finally {
-            if (is_file($root . '/validators.php')) { unlink($root . '/validators.php'); }
             self::remove($root);
         }
     }
@@ -77,7 +80,7 @@ final class ValidatorMapBuildTest extends TestCase
             self::container($root, 'development', new ClassIterator([new ClassInfo(BuildStateDto::class)]))
                 ->get(ApplicationBuildOrchestrator::class)->build();
             self::assertSame(0, BuildStateRule::$constructions);
-            $map = require $root . '/validators.php';
+            $map = ValidatorMapBuildTest::map($root);
             self::assertArrayNotHasKey(BuildStateDto::class, $map);
             $source = new ClassIterator([]);
             foreach (['development', 'production'] as $environment) {
@@ -98,9 +101,7 @@ final class ValidatorMapBuildTest extends TestCase
     {
         $root = sys_get_temp_dir() . '/validation_map_' . bin2hex(random_bytes(8));
         mkdir($root);
-        $file = $root . '/validators.php';
-        $contents = '<?php return ' . var_export([MapBuildDto::class => ['other' => 'required']], true) . ';';
-        file_put_contents($file, $contents);
+        $prepared = self::publish($root, [MapBuildDto::class => ['other' => 'required']]);
         try {
             $ordinary = self::container($root, 'production', new ClassIterator([]))->get(ValidationProviderInterface::class);
             $errors = $ordinary->provide(MapBuildDto::class)->validate(['name' => 'Ada']);
@@ -109,7 +110,7 @@ final class ValidatorMapBuildTest extends TestCase
             $recovery = self::container($root, 'production', new ClassIterator([]), forceSource: true)
                 ->get(ValidationProviderInterface::class);
             self::assertTrue($recovery->provide(MapBuildDto::class)->validate(['name' => 'Ada']));
-            self::assertSame($contents, file_get_contents($file));
+            self::assertSame($prepared->generation, self::store($root)->load()?->generation);
         } finally {
             self::remove($root);
         }
@@ -137,6 +138,8 @@ final class ValidatorMapBuildTest extends TestCase
 
     public static function container(string $root, string $environment, ClassIterator $source, array $extra = [], bool $forceSource = false): ContainerValue
     {
+        $store = self::store($root);
+        $prepared = $forceSource ? null : $store->load();
         $composition = (new ConfigFactory())->create(
             new Environment(['APP_ENV' => $environment, 'APP_DISCOVERY_SOURCE' => $forceSource]),
             new \Componenta\App\ConfigProvider(),
@@ -144,11 +147,17 @@ final class ValidatorMapBuildTest extends TestCase
             new \Componenta\Validation\ConfigProvider(),
             new \Componenta\Validation\App\ConfigProvider(),
             static fn (): array => [
-                'validation.map_file' => 'validators.php',
                 \Componenta\Config\ConfigKey::DEPENDENCIES => [
+                    \Componenta\Config\ConfigKey::FACTORIES => [
+                        BuildStore::class => static fn (): BuildStore => $store,
+                        BuildCommand::class => static fn (ContainerValue $container): BuildCommand => new BuildCommand(
+                            static fn (): PreparedBuild => $container->get(ApplicationBuildOrchestrator::class)->build(),
+                        ),
+                    ],
                     \Componenta\Config\ConfigKey::SERVICES => [
                         PathResolverInterface::class => new PathResolver($root),
                         \Componenta\App\ConfigKey::DISCOVERY_SOURCE => $source,
+                        ...($prepared === null ? [] : [\Componenta\App\ConfigKey::PREPARED_BUILD => $prepared]),
                     ],
                 ],
             ],
@@ -156,13 +165,32 @@ final class ValidatorMapBuildTest extends TestCase
         );
         return (new ContainerFactory())->create($composition->config, $composition->dependencies);
     }
+
+    public static function store(string $root): BuildStore
+    {
+        return new BuildStore($root . '/build');
+    }
+
+    public static function map(string $root): array
+    {
+        return self::store($root)->load()?->read(ValidationBuilder::ARTIFACT_ID, ValidationBuilder::SCHEMA_VERSION)
+            ?? throw new \LogicException('The validation fixture has no prepared rules.');
+    }
+
+    public static function publish(string $root, array $map, int $schema = ValidationBuilder::SCHEMA_VERSION): PreparedBuild
+    {
+        $store = self::store($root);
+        $context = $store->begin();
+        $context->write(ValidationBuilder::ARTIFACT_ID, $map, $schema);
+        return $store->publish($context);
+    }
 }
 
 final class SharedSourceBuilder implements \Componenta\App\Build\ApplicationBuilderInterface
 {
     public array $classes = [];
     public function __construct(private \Componenta\ClassFinder\ClassIteratorInterface $source) {}
-    public function build(): void
+    public function build(BuildContext $build): void
     {
         foreach ($this->source as $info) { $this->classes[] = $info->fullyQualifiedName; }
     }

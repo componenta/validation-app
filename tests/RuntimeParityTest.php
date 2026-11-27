@@ -33,7 +33,7 @@ final class RuntimeParityTest extends TestCase
         try {
             ValidatorMapBuildTest::container($root, 'development', new ClassIterator([new ClassInfo(AdvancedBuildDto::class)]))
                 ->get(ApplicationBuildOrchestrator::class)->build();
-            $map = require $root . '/validators.php';
+            $map = ValidatorMapBuildTest::map($root);
             foreach (['development', 'production', 'factory'] as $mode) {
                 $container = ValidatorMapBuildTest::container($root, $mode, new ClassIterator([]));
                 $validator = $mode === 'factory'
@@ -67,7 +67,7 @@ final class RuntimeParityTest extends TestCase
                 new ClassInfo(ServiceBuildDto::class), new ClassInfo(CustomRuleBuildDto::class),
                 new ClassInfo(ServiceBuildEnum::class, \Componenta\Tokenizer\DeclarationType::Enum_),
             ]))->get(ApplicationBuildOrchestrator::class)->build();
-            $map = require $root . '/validators.php';
+            $map = ValidatorMapBuildTest::map($root);
             self::assertSame(ServiceValidatorContract::class, $map[ServiceBuildEnum::class]);
             foreach (['development', 'production'] as $mode) {
                 $rules = new RuleFactory();

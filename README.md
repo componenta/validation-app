@@ -1,6 +1,6 @@
 # Componenta Validation App
 
-Application build integration for Componenta validation.
+Application build integration for Componenta Validation 3.2+, App 6, Config 4 and DI 6. Validation App 4 requires PHP 8.5.13 or later.
 
 Install componenta/validation-app and run the application's normal command:
 
@@ -8,7 +8,7 @@ Install componenta/validation-app and run the application's normal command:
 php bin/console.php app:build
 ~~~
 
-The ConfigProvider registers ValidationBuilder in app.builders. Its factory receives the shared source ClassIteratorInterface from App\ConfigKey::DISCOVERY_SOURCE and resolves the output through PathResolverInterface. Listing commands and requesting help keep build dependencies lazy. Include application and package DTO directories in the application's discovery configuration.
+The ConfigProvider registers ValidationBuilder in app.builders. Its factory receives the shared source ClassIteratorInterface from App\ConfigKey::DISCOVERY_SOURCE. App owns artifact storage and publication. Listing commands and requesting help keep build dependencies lazy. Include application and package DTO directories in the application's discovery configuration.
 
 ## Generated map
 
@@ -26,7 +26,7 @@ final class RegistrationDto
 final class ExternalRegistrationDto {}
 ~~~
 
-The generated PHP file returns:
+The `validation.rules` artifact payload contains:
 
 ~~~php
 return [
@@ -52,7 +52,7 @@ The default factory creates CompositeValidationProvider with this priority:
 3. MapValidationProvider in production when a valid artifact is available.
 4. AttributeValidationProvider.
 
-MapValidationProvider returns null for an absent entry. The composite then asks the attribute provider. Development uses the same composition without the generated map. Missing, unreadable or malformed artifacts use attributes. Runtime never starts a build or writes artifacts. Exceptions while providing a validator propagate without retry.
+MapValidationProvider returns null for an absent entry. The composite then asks the attribute provider. Development and `APP_DISCOVERY_SOURCE=1` use the same composition without the generated map. Production reads `validation.rules` only from the `PreparedBuild` selected by App. Missing, skipped, incompatible or malformed artifacts use attributes. The optional snapshot is checked through `App\ConfigKey::PREPARED_BUILD`, not DI class autowiring. Runtime never starts a build or writes artifacts. Exceptions while providing a validator propagate without retry.
 
 The current rule factory, service registrations, database/MIME dependencies, formatter and locale apply in both environments. Every provide() creates fresh attribute rules and nested arguments. Repeated validate() calls on one validator preserve that validator's state.
 
@@ -73,15 +73,26 @@ That factory supplies the entire provider. The default composite is not construc
 
 ## Publication
 
-Configure the output path with:
+`ValidationBuilder::build(BuildContext $build)` writes the complete map as
+`validation.rules`, schema version 1. Its constructor only receives the source
+class iterator. The payload contains arrays and strings; runtime attribute
+instances, rules, callbacks and services are never serialized.
 
-~~~php
-use Componenta\Validation\App\ConfigKey;
+App stages artifacts from all participants and publishes one generation after
+every participant succeeds. A failure leaves the previous generation selected.
+Deploy the generation with its matching source and configuration; `APP_BUILD_ID`
+can identify that deployment. A structurally valid snapshot is deliberately
+retained until a rebuild or `app:clean`; runtime does not scan source for changes.
+Existing long-running readers retain their selected generation after cleanup.
 
-return [ConfigKey::MAP_FILE => 'var/cache/build/validators.php'];
-~~~
+## Migration to Validation App 4
 
-The builder collects the map before writing it, creates the output directory and atomically replaces one PHP file. The artifact contains only arrays and strings. Deploy it together with the matching source code.
+Remove `validation.map_file` and `Componenta\Validation\App\ConfigKey` settings.
+Independent `validators.php` files are no longer read or written. Remove old files
+from deployments and run the application build again. Custom code calling
+`ValidationBuilder` must supply `BuildContext` to `build()` and remove the former
+filename constructor argument. Package-level `clean()` was removed; cleanup is
+owned by App's `BuildStore` and `app:clean`.
 
 ## Local integration checks
 

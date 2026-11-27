@@ -29,7 +29,7 @@ final class NativeFailureTest extends TestCase
             ValidatorMapBuildTest::container($root, 'production', new ClassIterator([new ClassInfo($class)]))
                 ->get(ApplicationBuildOrchestrator::class)->build();
             self::assertSame(0, ThrowingBuildRule::$constructions);
-            $map = require $root . '/validators.php';
+            $map = ValidatorMapBuildTest::map($root);
             foreach (['development', 'production', 'factory'] as $mode) {
                 $container = ValidatorMapBuildTest::container($root, $mode, new ClassIterator([]));
                 try {

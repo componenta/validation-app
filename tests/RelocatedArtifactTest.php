@@ -54,7 +54,7 @@ PHP;
             $autoload = dirname(__DIR__) . '/vendor/autoload.php';
             if (!is_file($autoload)) { $autoload = dirname(__DIR__) . '/integration/vendor/autoload.php'; }
             $script = '<?php require ' . var_export($autoload, true) . '; require __DIR__ . "/source.php";' . <<<'PHP'
-$map = require __DIR__ . '/validators.php';
+$map = (new \Componenta\App\Build\BuildStore(__DIR__ . '/build'))->load()?->read(\Componenta\Validation\App\Build\ValidationBuilder::ARTIFACT_ID, \Componenta\Validation\App\Build\ValidationBuilder::SCHEMA_VERSION);
 $container = new class implements \Psr\Container\ContainerInterface {
     public function get(string $id): mixed { throw new \LogicException($id); }
     public function has(string $id): bool { return false; }

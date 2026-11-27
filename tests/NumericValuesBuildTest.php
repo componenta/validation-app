@@ -31,7 +31,7 @@ final class NumericValuesBuildTest extends TestCase
                     new ClassInfo(LiteralNumbersDto::class), new ClassInfo(AttributeNumbersDto::class),
                 ]));
                 self::assertSame(0, (new CommandTester($container->get(BuildCommand::class)))->execute([]));
-                $map = require $root . '/validators.php';
+                $map = ValidatorMapBuildTest::map($root);
                 self::assertSame(['score' => 'min:1e-2', 'value' => 'required_if:level,1e-2'], $map[LiteralNumbersDto::class]);
                 self::assertArrayNotHasKey(AttributeNumbersDto::class, $map);
             }

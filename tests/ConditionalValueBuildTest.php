@@ -30,7 +30,7 @@ final class ConditionalValueBuildTest extends TestCase
                     new ClassInfo(LiteralConditionsDto::class), new ClassInfo(AttributeConditionsDto::class),
                 ]));
                 self::assertSame(0, (new CommandTester($build->get(BuildCommand::class)))->execute([]));
-                $map = require $root . '/validators.php';
+                $map = ValidatorMapBuildTest::map($root);
                 self::assertSame([
                     'email' => 'when:enabled:true,required',
                     'name' => 'when:level:2,required',
@@ -68,7 +68,7 @@ final class ConditionalValueBuildTest extends TestCase
                     new ClassInfo(LiteralElseDto::class), new ClassInfo(AttributeElseDto::class),
                 ]));
                 self::assertSame(0, (new CommandTester($build->get(BuildCommand::class)))->execute([]));
-                $map = require $root . '/validators.php';
+                $map = ValidatorMapBuildTest::map($root);
                 self::assertSame(['value' => 'when:enabled:true,required,email'], $map[LiteralElseDto::class]);
                 self::assertArrayNotHasKey(AttributeElseDto::class, $map);
             }

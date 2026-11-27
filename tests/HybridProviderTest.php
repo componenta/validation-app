@@ -77,7 +77,7 @@ final class HybridProviderTest extends TestCase
                 new ClassInfo(NativeArgumentDto::class), new ClassInfo(ConstantRuleDto::class),
             ]))->get(ApplicationBuildOrchestrator::class)->build();
             self::assertSame(0, InvalidRuleArgument::$constructions);
-            self::assertSame([], require $root . '/validators.php');
+            self::assertSame([], ValidatorMapBuildTest::map($root));
             foreach (['development', 'production'] as $environment) {
                 $provider = ValidatorMapBuildTest::container($root, $environment, new ClassIterator([]))
                     ->get(ValidationProviderInterface::class);
@@ -124,7 +124,7 @@ final class HybridProviderTest extends TestCase
             ValidatorMapBuildTest::container($root, 'production', new ClassIterator([
                 new ClassInfo(HybridDto::class), new ClassInfo(LiteralHybridDto::class),
             ]))->get(ApplicationBuildOrchestrator::class)->build();
-            $map = require $root . '/validators.php';
+            $map = ValidatorMapBuildTest::map($root);
             self::assertArrayNotHasKey(HybridDto::class, $map);
             self::assertSame(['email' => 'required|email'], $map[LiteralHybridDto::class]);
             foreach (['development', 'production'] as $environment) {

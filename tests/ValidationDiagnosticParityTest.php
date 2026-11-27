@@ -34,7 +34,7 @@ final class ValidationDiagnosticParityTest extends TestCase
                 if ($built) {
                     $build = ValidatorMapBuildTest::container($root, $environment, new ClassIterator([new ClassInfo(InvalidDiagnosticDto::class)]));
                     self::assertSame(0, (new CommandTester($build->get(BuildCommand::class)))->execute([]));
-                    self::assertArrayHasKey(InvalidDiagnosticDto::class, require $root . '/validators.php');
+                    self::assertArrayHasKey(InvalidDiagnosticDto::class, ValidatorMapBuildTest::map($root));
                 }
                 $provider = ValidatorMapBuildTest::container($root, $environment, new ClassIterator([]))
                     ->get(ValidationProviderInterface::class);

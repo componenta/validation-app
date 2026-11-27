@@ -49,7 +49,7 @@ final class CompositeRuleBuildTest extends TestCase
             if ($built) {
                 $build = ValidatorMapBuildTest::container($root, $environment, new ClassIterator([new ClassInfo($dto)]), $config);
                 self::assertSame(0, (new CommandTester($build->get(BuildCommand::class)))->execute([]));
-                self::assertArrayHasKey($dto, require $root . '/validators.php');
+                self::assertArrayHasKey($dto, ValidatorMapBuildTest::map($root));
             }
             $provider = ValidatorMapBuildTest::container($root, $environment, new ClassIterator([]), $config)
                 ->get(ValidationProviderInterface::class);

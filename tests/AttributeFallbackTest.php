@@ -115,7 +115,7 @@ final class AttributeFallbackTest extends TestCase
                 yield $mode => ValidatorMapBuildTest::container($root, $mode, new ClassIterator([]), $extra)
                     ->get(ValidationProviderInterface::class);
             }
-            unlink($root . '/validators.php');
+            ValidatorMapBuildTest::store($root)->clean();
             yield 'production without map' => ValidatorMapBuildTest::container($root, 'production', new ClassIterator([]), $extra)
                 ->get(ValidationProviderInterface::class);
         } finally {

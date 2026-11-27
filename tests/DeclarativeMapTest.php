@@ -69,7 +69,7 @@ final class DeclarativeMapTest extends TestCase
                 new ClassInfo(NoValidationDto::class),
             ]))->get(ApplicationBuildOrchestrator::class)->build();
 
-            $map = require $root . '/validators.php';
+            $map = ValidatorMapBuildTest::map($root);
             self::assertSame(['email' => 'required|email', 'years' => 'required|int'], $map[RegistrationDto::class]);
             self::assertSame(RegistrationValidator::class, $map[ExternalRegistrationDto::class]);
             self::assertArrayNotHasKey(NoValidationDto::class, $map);

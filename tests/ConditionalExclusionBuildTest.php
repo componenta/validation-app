@@ -31,7 +31,7 @@ final class ConditionalExclusionBuildTest extends TestCase
                     new ClassInfo(LiteralExclusionDto::class), new ClassInfo(AttributeExclusionDto::class),
                 ]));
                 self::assertSame(0, (new CommandTester($build->get(BuildCommand::class)))->execute([]));
-                $map = require $root . '/validators.php';
+                $map = ValidatorMapBuildTest::map($root);
                 self::assertSame([
                     'title' => 'exclude_if:is_draft,true|required',
                     'summary' => 'required|exclude_if:is_draft,true',

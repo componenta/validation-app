@@ -54,7 +54,7 @@ final class RegisteredRuleBuildTest extends TestCase
                     $root, $environment, new ClassIterator([new ClassInfo($dto)]), $config,
                 );
                 self::assertSame(0, new CommandTester($build->get(BuildCommand::class))->execute([]));
-                self::assertArrayHasKey($dto, require $root . '/validators.php');
+                self::assertArrayHasKey($dto, ValidatorMapBuildTest::map($root));
             }
             $container = ValidatorMapBuildTest::container($root, $environment, new ClassIterator([]), $config);
             $provider = $container->get(ValidationProviderInterface::class);
